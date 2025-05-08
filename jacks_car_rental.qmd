@@ -1,0 +1,201 @@
+---
+title: MDPs and Dynamic Programming
+subtitle: Notes and Solution to Jack's Car Rental Problem
+author: Kevin Zyskowski
+date: 5/3/2025
+
+toc: true
+toc-location: right-body
+number-sections: true
+jupyter: python3
+bibliography: references.bib
+
+# format:
+  # html:
+    # code-fold: true
+    # code-tools: false
+---
+
+# Introduction
+
+I recently acquired my own copy of Reinforcement Learning by @sutton+barto because I've been wanting to dive back into RL and felt I needed to brush up on the foundations first (the last time I had experience was during my undergrad). To that end, I've been working through the book and decided that I would try to summarize key takeaways and implement solutions for some of the example problems. That way, I can reinforce my knowledge and have some notes to refer back to. This article summarizes Chapters 3 and 4 and includes my own Python implementation of the Jack's Car Rental problem as described in the book. Take from this article what you want. Maybe reading it will help you understand RL a little better, like creating it did for me. 😊
+
+# Markov Decision Processes
+
+According to @sutton+barto, Markov Decision Processes (or MDPs for short) can be defined as follows:
+
+> MDPs are a mathematically idealized form of the reinforcement learning problem for which precise theoretical statements can be made.
+
+Essentially, MDPs allow us to define formal models of problems we are trying to solve, and enable us to apply RL algorithms to solve them. When thinking about problems in the context of MDPs, we think about **states**, **actions**, and **rewards**. Our goal is to optimize future rewards by taking actions when observing states. 
+
+
+
+Formally, we want to learn an optimal **value function** $v^*(s)$ that tells us the expected return of starting in a given state and following an **optimal policy** $\pi^*$, or an optimal **value-action function** $q^*(s,a)$ that tells us the expected return of starting in a given state, taking an action, and thereafter following an optimal policy. The asterisk implies that $v$, $q$, and $pi$ are optimal (they capture the maximum expected return).
+
+One important aspect of MDPs is that they exhibit the *Markov property*, which exists when the future state of a system depends only on the current state, and not on its past history.
+
+# Jack's Car Rental
+
+The original problem statement for Jack's Car Rental can be seen in Chapter 4 on page 81:
+
+> **Example 4.2:** Jack manages two locations for a nationwide car rental company. Each day, some number of customers arrive at each location to rent cars. If Jack has a car available, he rents it out and is credited $10 by the national company. If he is out of cars at that location, then the business is lost. Cars become available for renting the day after they are returned. To help ensure that cars are available where they are needed, Jack can move them between the two locations overnight, at a cost of $2 per car moved. We assume that the number of cars requested and returned at each location are Poisson random variables, meaning that the probability that the number is $n$ is $\frac{\lambda^n}{n!}e^{-\lambda}$ where $\lambda$ is the expected number. Suppose $\lambda$ is 3 and 4 for rental requests at the first and second locations and 3 and 2 for returns. To simplify the problem slightly, we assume that there can be no more than 20 cars at each location (any additional cars are returned to the nationwide company, and thus disappear from the problem) and a maximum of five cars can be moved from one location to the other in one night. We take the discount rate to be $\gamma=0.9$ and formulate this as a continuing finite MDP, where the time steps are days, the state is the number of cars at each location at the end of the day, and the actions are the net numbers of cars moved between the two locations overnight.
+
+
+## Implementation
+
+### Poisson Distribution
+
+Before we get started with modeling the MDP, it will help us to have a class to represent arbitrary Poisson distributions. In particular, we care about the probability mass function (PMF) which tells us the probability of observing a particular outcome of the random event modeled by the distribution.
+
+The PMF of a Poisson is defined as
+
+$$
+P(N=n ; \lambda) = \frac{\lambda^n}{n!}e^{-\lambda}
+$$
+
+```{python}
+import math
+import numpy as np
+
+
+def poisson_pmf(n: int, mu: float):
+    """The Poisson probability mass function.
+
+    Args:
+        n (int): the outcome of the random event.
+        mu (float): the expected value of the random event.
+    """
+    return (mu**n) / (math.factorial(n)) * math.e ** (-mu)
+
+
+class Poisson:
+    def __init__(self, mu: float, upper_n: int = 15):
+        """Initialize a new Poisson distribution.
+
+        This class caches values from the PMF for all values
+        of n in the inclusive range [0, upper_n].
+
+        Args:
+            mu (float): the mean parameter.
+            upper_n (int): the largest outcome we care about to observe.
+        """
+        assert mu > 0, "mu must be a positive number"
+        assert upper_n >= 0, "n must be a non-negative integer"
+        self.mu = mu
+        self.upper_n = upper_n
+        self.pmf = np.zeros(upper_n + 1)
+
+        for n in range(upper_n + 1):
+            # rely on scipy for PMF implementation
+            self.pmf[n] = poisson_pmf(n, self.mu)
+
+        # if we capture PMF for events [0, upper_n], we will approach
+        # a sum of 1 as we increase upper_n. the excluded tail contains
+        # some mass, so we redistribute it to the included mass
+        self.pmf /= self.pmf.sum()
+```
+
+Having the PMF values precomputed and stored in NumPy arrays will help us to write more efficient, vectorized code later on when we implement policy iteration.
+
+### Configuration
+
+This section is pretty self-explanatory: we will capture the relevant configuration parameters for the problem and store them in constants.
+
+```{python}
+# | output: false
+
+# max number of cars at either location at once
+MAX_CARS = 20
+
+# max number of cars that can be moved during the night
+MAX_MOVES = 5
+
+# reward (cost) of moving a single car
+MOVE_COST = -2
+
+# reward of renting a car
+RENT_CREDIT = 10
+
+# MDP discount factor
+GAMMA = 0.9
+
+# poisson parameters
+POIS_REQ_MU = (3, 4)  # expected daily requests at location (1, 2)
+POIS_RET_MU = (3, 2)  # expected daily returns at location (1, 2)
+
+# lets also instantiate distributions for these parameters
+# (take advantage of the class we created earlier)
+POIS_REQ = tuple(map(Poisson, POIS_REQ_MU))
+POIS_RET = tuple(map(Poisson, POIS_RET_MU))
+```
+
+### States and Actions
+
+Let's define the state and action types that we will use. I choose $s\in\cal{S}$ to be a tuple of integers representing the count of cars at each location, and $a\in\cal{A}(s)$ to be an integer representing the count of cars moved to the second location.
+
+This representation of $\cal{A}(s)$ allows us to represent a flow of cars from the first location to the second location as a positive integer, and a flow of cars from the second location to the first as a negative integer. We can choose this representation because we only care about the total flow between locations. If we moved 4 cars from location 1 to location 2, and 1 car from location 2 to location 1, we'd have a net movement of 3 cars to location 2. This is the same as moving 3 cars from location 1 to location 2 and 0 cars from location 2 to location 1, but is cheaper (we move 2 less cars!) so will always be preferred.
+
+```{python}
+from typing import Sequence
+
+State = tuple[int, int]
+"""
+The MDP state is an (i, j) pair of the number of cars at each location.
+"""
+
+Action = int
+"""
+The MDP action is an integer indicating the movement of cars.
+
+A positive value indicates a flow from the first location to the second.
+A negative value indicates a flow from the second location to the first.
+A value of zero indicates no movement of cars.
+"""
+
+
+def states() -> Sequence[State]:
+    """Return a collection of all possible states.
+
+    Returns:
+        Sequence[State]: a list of all possible (i, j) state pairs.
+    """
+    return [(i, j) for i in range(0, MAX_CARS + 1) for j in range(0, MAX_CARS + 1)]
+
+
+def actions(state: State) -> Sequence[Action]:
+    """Return a collection of all possible actions from the given state.
+
+    Args:
+        state (State): the starting state.
+
+    Returns:
+        Sequence[Action]: a list of all possible (and valid) actions.
+    """
+    # the total number of cars moveable from either location is bounded by:
+    #   - the MAX_MOVES parameter
+    #   - the number of cars at the source location
+    #   - the number of spots at the target location
+    upper_bound = min(MAX_MOVES, state[0], (MAX_CARS - state[1]))
+    lower_bound = min(MAX_MOVES, state[1], (MAX_CARS - state[0]))
+    return range(-lower_bound, upper_bound + 1)
+```
+
+I also define two helper functions to return the state set $\cal{S}$ and action sets $\cal{A}(s)$ for convenience. The `action(state: State)` function is particularly useful because it ensures that we only iterate over valid actions during policy improvement.
+
+### Policy Iteration
+
+Now we're getting to the good stuff! Policy iteration, as explained by @sutton+barto, is an iterative loop between two stages: **policy evaluation** and **policy improvement**. 
+
+We start out with an arbitrary value function $V_0$ and policy $\pi_0$ (note: we use an uppercase $V$ here instead of a lowercase $v$ because $V$ is a tabular approximation of the function $v$). First, we run policy evaluation to update $V$ such that it converges to the true value function for the current policy:
+
+$$
+V_{i+1} \approx v_{\pi_{i}}
+$$
+
+Then, we run policy improvement to update $\pi$ such that it is greedy with respect to the current value function:
+
+$$
+\pi_{i+1}(s) = \text{argmax}_a \sum_{s',r} p(s',r|s,a)[r + \gamma V_i(s')] \;\;\forall s \in \cal{S}
+$$
+
+Through cycling back and forth between these two stages, we approach the optimal solution for our MDP.

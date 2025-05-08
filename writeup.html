@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.29">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Kevin Zyskowski">
+<meta name="dcterms.date" content="2025-01-01">
+
+<title>Finite MDPs and Dynamic Programming (RL Part 1)</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="writeup_files/libs/clipboard/clipboard.min.js"></script>
+<script src="writeup_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="writeup_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="writeup_files/libs/quarto-html/popper.min.js"></script>
+<script src="writeup_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="writeup_files/libs/quarto-html/anchor.min.js"></script>
+<link href="writeup_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="writeup_files/libs/quarto-html/quarto-syntax-highlighting-0815c480559380816a4d1ea211a47e91.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="writeup_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="writeup_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="writeup_files/libs/bootstrap/bootstrap-81267100e462c21b3d6c0d5bf76a3417.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#finite-markov-decision-processes" id="toc-finite-markov-decision-processes" class="nav-link" data-scroll-target="#finite-markov-decision-processes">Finite Markov Decision Processes</a>
+  <ul class="collapse">
+  <li><a href="#policies-and-value-functions" id="toc-policies-and-value-functions" class="nav-link" data-scroll-target="#policies-and-value-functions">Policies and Value Functions</a></li>
+  <li><a href="#bellman-equations" id="toc-bellman-equations" class="nav-link" data-scroll-target="#bellman-equations">Bellman Equations</a></li>
+  <li><a href="#optimal-policies-and-value-functions" id="toc-optimal-policies-and-value-functions" class="nav-link" data-scroll-target="#optimal-policies-and-value-functions">Optimal Policies and Value Functions</a></li>
+  </ul></li>
+  <li><a href="#dynamic-programming" id="toc-dynamic-programming" class="nav-link" data-scroll-target="#dynamic-programming">Dynamic Programming</a>
+  <ul class="collapse">
+  <li><a href="#policy-evaluation" id="toc-policy-evaluation" class="nav-link" data-scroll-target="#policy-evaluation">Policy Evaluation</a></li>
+  <li><a href="#policy-improvement" id="toc-policy-improvement" class="nav-link" data-scroll-target="#policy-improvement">Policy Improvement</a></li>
+  <li><a href="#policy-iteration" id="toc-policy-iteration" class="nav-link" data-scroll-target="#policy-iteration">Policy Iteration</a></li>
+  <li><a href="#value-iteration" id="toc-value-iteration" class="nav-link" data-scroll-target="#value-iteration">Value Iteration</a></li>
+  </ul></li>
+  <li><a href="#jacks-car-rental" id="toc-jacks-car-rental" class="nav-link" data-scroll-target="#jacks-car-rental">Jack’s Car Rental</a>
+  <ul class="collapse">
+  <li><a href="#poisson-distribution" id="toc-poisson-distribution" class="nav-link" data-scroll-target="#poisson-distribution">Poisson Distribution</a></li>
+  <li><a href="#mdp-formalization" id="toc-mdp-formalization" class="nav-link" data-scroll-target="#mdp-formalization">MDP Formalization</a></li>
+  <li><a href="#dynamics" id="toc-dynamics" class="nav-link" data-scroll-target="#dynamics">Dynamics</a></li>
+  <li><a href="#policy-iteration-1" id="toc-policy-iteration-1" class="nav-link" data-scroll-target="#policy-iteration-1">Policy Iteration</a></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a></li>
+  </ul></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Finite MDPs and Dynamic Programming (RL Part 1)</h1>
+<p class="subtitle lead">Notes from Chapters 3 and 4 of <em>Reinforcement Learning: An Introduction</em> and Solutions to Jack’s Car Rental Problem</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Kevin Zyskowski </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">January 1, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+<nav id="TOC-body" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction">Introduction</a></li>
+  <li><a href="#finite-markov-decision-processes" id="toc-finite-markov-decision-processes">Finite Markov Decision Processes</a>
+  <ul>
+  <li><a href="#policies-and-value-functions" id="toc-policies-and-value-functions">Policies and Value Functions</a></li>
+  <li><a href="#bellman-equations" id="toc-bellman-equations">Bellman Equations</a></li>
+  <li><a href="#optimal-policies-and-value-functions" id="toc-optimal-policies-and-value-functions">Optimal Policies and Value Functions</a></li>
+  </ul></li>
+  <li><a href="#dynamic-programming" id="toc-dynamic-programming">Dynamic Programming</a>
+  <ul>
+  <li><a href="#policy-evaluation" id="toc-policy-evaluation">Policy Evaluation</a></li>
+  <li><a href="#policy-improvement" id="toc-policy-improvement">Policy Improvement</a></li>
+  <li><a href="#policy-iteration" id="toc-policy-iteration">Policy Iteration</a></li>
+  <li><a href="#value-iteration" id="toc-value-iteration">Value Iteration</a></li>
+  </ul></li>
+  <li><a href="#jacks-car-rental" id="toc-jacks-car-rental">Jack’s Car Rental</a>
+  <ul>
+  <li><a href="#poisson-distribution" id="toc-poisson-distribution">Poisson Distribution</a></li>
+  <li><a href="#mdp-formalization" id="toc-mdp-formalization">MDP Formalization</a></li>
+  <li><a href="#dynamics" id="toc-dynamics">Dynamics</a></li>
+  <li><a href="#policy-iteration-1" id="toc-policy-iteration-1">Policy Iteration</a></li>
+  <li><a href="#results" id="toc-results">Results</a></li>
+  </ul></li>
+  <li><a href="#references" id="toc-references">References</a></li>
+  </ul>
+</nav>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>I recently stumbled upon two papers in deep reinforcement learning (DRL): <span class="citation" data-cites="ha2018worldmodels">Ha and Schmidhuber (<a href="#ref-ha2018worldmodels" role="doc-biblioref">2018</a>)</span> and <span class="citation" data-cites="hafner2024masteringdiversedomainsworld">Hafner et al. (<a href="#ref-hafner2024masteringdiversedomainsworld" role="doc-biblioref">2024</a>)</span>, which have resparked my enthusiasm for deep learning, reinforcement learning (RL), and their combination. To capitalize on this, I acquired my own copy of Reinforcement Learning: An Introduction by <span class="citation" data-cites="sutton+barto">Sutton and Barto (<a href="#ref-sutton+barto" role="doc-biblioref">2018</a>)</span> to read through. The last time I read it was for an undergraduate RL class, and I felt that I needed to brush up on my foundational RL knowledge, diving deep into core theory and intuition, before I jumped into learning more about DRL. I also want to explore doing research in DRL, so it is even more important that I solidify my core competencies.</p>
+<p>To help me learn more effectively and practice my own writing skill (which I believe is critical for successful communication in life), I thought it would be a nice idea to jot notes about key takeaways I found in the book and write about them. I also thought it would be both fun and productive to implement some of the example problems/challenges in real code so that I could reinforce the concepts explored in the book and play around with them. That’s what this article is about. I write a little bit about Chapters 3 and 4 from the text and also include a full solution to the Jack’s Car Rental problem using policy iteration and value iteration, two forms of dynamic programming.</p>
+<p>I hope this article serves as a good resource for others to learn from; it certainly did for me as I was creating it. 😊</p>
+</section>
+<section id="finite-markov-decision-processes" class="level1">
+<h1>Finite Markov Decision Processes</h1>
+<p>Sutton and Barto write this about Markov decision processes (MDPs) at the start of Chapter 3:</p>
+<blockquote class="blockquote">
+<p>MDPs are a mathematically idealized form of the reinforcement learning problem for which precise theoretical statements can be made.</p>
+</blockquote>
+<p>I take this definition to mean that MDPs are a framework for us to formally model real-world problems so that we can apply RL methods to solve them. The framework defines two entities: the <strong>agent</strong> and the <strong>environment</strong>. The agent learns from and makes decisions on how to interact with the environment, and the environment supplies the agent with (sometimes partial<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>) information about the current state, as well as rewards (or punishments) for taking certain actions.</p>
+<div id="fig-agent-environment-interface" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-agent-environment-interface-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="http://incompleteideas.net/book/ebook/figtmp7.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-agent-environment-interface-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The Agent-Environment interface.
+</figcaption>
+</figure>
+</div>
+<p>The agent-environment interaction loop can be seen in <a href="#fig-agent-environment-interface" class="quarto-xref">Figure&nbsp;1</a>. At each timestep <span class="math inline">\(t\)</span> the agent observes the current state <span class="math inline">\(s_t \in \cal{S}\)</span> and selects an action <span class="math inline">\(a_t \in \cal{A}(s_t)\)</span><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> to interact with the environment. In turn, the environment provides the next state <span class="math inline">\(s_{t+1}\)</span> as well as a scalar reward <span class="math inline">\(r_{t+1} \in \cal{R} \subset \mathbb{R}\)</span>. If we unravel a sequence of interactions between the agent and the environment, we are left with something that looks like the following:</p>
+<p><span class="math display">\[
+S_0, A_0, R_1, S_1, A_1, R_2, S_2, A_3, \dots
+\]</span></p>
+<p>This is called a <strong>trajectory</strong>. In <strong>episodic tasks</strong>, there is a special terminal state which demarcates the end of a trajectory, or <strong>episode</strong>. The terminal state is a member of the set <span class="math inline">\(\cal{S}^+\)</span>, which is a superset of <span class="math inline">\(\cal{S}\)</span>. In <strong>continous tasks</strong>, a trajectory may continue on forever, without limit. In the text, Sutton and Barto use uppercase letters <span class="math inline">\(S, A\)</span>, and <span class="math inline">\(R\)</span> to represent random variables, and lowercase letters <span class="math inline">\(s, a\)</span> and <span class="math inline">\(r\)</span> to represent observed outcomes of those random variables.</p>
+<p>We can quantify the <strong>return</strong> of any trajectory as follows:</p>
+<p><span class="math display">\[
+G_t
+= R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \dots
+= \sum^T_{k=t+1} \gamma^{k-t-1} R_{k}
+\]</span></p>
+<p>This definition represents the cumulative sum of rewards after time step <span class="math inline">\(t\)</span>. In this definition, we also introduce the concept of a <strong>discount rate</strong>, a parameter within the range <span class="math inline">\(0 \leq \gamma \leq 1\)</span>, which balances the relative impact of future rewards on the present value of the return. When <span class="math inline">\(\gamma=1\)</span>, we have no discounting on future rewards, and when <span class="math inline">\(\gamma=0\)</span>, we completely throw away future rewards.</p>
+<section id="policies-and-value-functions" class="level2">
+<h2 class="anchored" data-anchor-id="policies-and-value-functions">Policies and Value Functions</h2>
+<p>When we are discussing the decision-making ability of an agent, we are referring to that agent’s <strong>policy</strong>. A policy is a mapping of states to a probability distribution that represents the chances of selecting an action <span class="math inline">\(a\)</span> from a given state <span class="math inline">\(s\)</span>. We write the policy as <span class="math inline">\(\pi(a|s)\)</span>, which represents the probability of taking action <span class="math inline">\(a\)</span> from state <span class="math inline">\(s\)</span>. In the case that an agent’s policy is deterministic as opposed to stochastic, we can simply write <span class="math inline">\(\pi(s)\)</span>.</p>
+<p>In order to select an optimal policy <span class="math inline">\(\pi_*\)</span>, we must first quantify the quality of policies with respect to their expected returns. This can be accomplished through <strong>value functions</strong> and <strong>action-value functions</strong>. The value function <span class="math inline">\(v_\pi(s)\)</span> quantifies how good it is for an agent to be in a specific state, and the action-value function <span class="math inline">\(q_\pi(s,a)\)</span> quantifies how good it is for an agent to be in a specific state and select a specific action. Because the return of a trajectory is governed by the policy an agent follows, the value function and action-value function are also defined with respect to a policy. They are defined as follows:</p>
+<p><span id="eq-value-function"><span class="math display">\[
+v_\pi(s_t) = \mathbb{E}_\pi\lbrack G_t | S_t = s_t \rbrack
+\tag{1}\]</span></span></p>
+<p><span id="eq-action-value-function"><span class="math display">\[
+q_\pi(s_t, a_t) = \mathbb{E}_\pi\lbrack G_t | S_t = s_t, A_t = a_t \rbrack
+\tag{2}\]</span></span></p>
+</section>
+<section id="bellman-equations" class="level2">
+<h2 class="anchored" data-anchor-id="bellman-equations">Bellman Equations</h2>
+<p>For any policy <span class="math inline">\(\pi\)</span>, the value function <span class="math inline">\(v_\pi\)</span> has a recursive property in that for any state <span class="math inline">\(s\)</span>, the value function can be defined with respect to its successor states <span class="math inline">\(s' \in \cal{S}\)</span>:</p>
+<p><span id="eq-bellman-value"><span class="math display">\[
+v_\pi(s)
+=
+\sum_{a}\pi(a|s)
+\sum_{s',r}p(s',r|s, a)\lbrack r + \gamma v_\pi(s') \rbrack
+\tag{3}\]</span></span></p>
+<p>This equation is referred to as the Bellman equation for the value function, and the corresponding Bellman equation for the action-value function is:</p>
+<p><span id="eq-bellman-action-value"><span class="math display">\[
+q_\pi(s, a)
+=
+\sum_{s',r}p(s',r|s, a)\lbrack r + \gamma \sum_{a'}\pi(a'|s')q_\pi(s',a') \rbrack
+\tag{4}\]</span></span></p>
+<p>The function <span class="math inline">\(p(s',r|s,a)\)</span> represents the probability of transitioning to the next state <span class="math inline">\(s'\)</span> and receiving a reward <span class="math inline">\(r\)</span> given that you start in state <span class="math inline">\(s\)</span> and take action <span class="math inline">\(a\)</span>. This function is known as the <strong>dynamics</strong> of the MDP.</p>
+<p>Both <a href="#eq-bellman-value" class="quarto-xref">Equation&nbsp;3</a> and <a href="#eq-bellman-action-value" class="quarto-xref">Equation&nbsp;4</a> are both derived from <a href="#eq-value-function" class="quarto-xref">Equation&nbsp;1</a> and <a href="#eq-action-value-function" class="quarto-xref">Equation&nbsp;2</a>, and the full steps can be found in the text (although they are short and sweet 😊).</p>
+</section>
+<section id="optimal-policies-and-value-functions" class="level2">
+<h2 class="anchored" data-anchor-id="optimal-policies-and-value-functions">Optimal Policies and Value Functions</h2>
+<p>For finite MDPs, because the state and action spaces are finite, there is a finite number of policies that exist. If we quantify the “score” of each policy <span class="math inline">\(\pi\)</span> by its value function <span class="math inline">\(v_\pi(s)\)</span>, then it follows that there must exist at least one policy <span class="math inline">\(\pi_*\)</span> such that <span class="math inline">\(v_{*}(s)\geq v_\pi(s)\)</span> for all other <span class="math inline">\(\pi\)</span> and for each <span class="math inline">\(s \in \cal{S}\)</span>. We call this an <strong>optimal policy</strong> because an agent maximizes their expected return when adhering to it.</p>
+<p>The optimal Bellman equations for the value function and action-value function are subtly different from <a href="#eq-bellman-value" class="quarto-xref">Equation&nbsp;3</a> and <a href="#eq-bellman-action-value" class="quarto-xref">Equation&nbsp;4</a>; they are defined as follows:</p>
+<p><span id="eq-opt-bellman-value"><span class="math display">\[
+v_*(s)
+=
+\max_{a}
+\sum_{s',r}p(s',r|s, a)\lbrack r + \gamma v_*(s') \rbrack
+\tag{5}\]</span></span></p>
+<p><span id="eq-opt-bellman-action-value"><span class="math display">\[
+q_*(s, a)
+=
+\sum_{s',r}p(s',r|s, a)\lbrack r + \gamma \max_{a'}q_*(s',a') \rbrack
+\tag{6}\]</span></span></p>
+</section>
+</section>
+<section id="dynamic-programming" class="level1">
+<h1>Dynamic Programming</h1>
+<p>Here is the definition of dynamic programming as posed by Sutton and Barto:</p>
+<blockquote class="blockquote">
+<p>The term dynamic programming (DP) refers to a collection of algorithms that can be used to compute optimal policies given a perfect model of the environment as a Markov decision process (MDP).</p>
+</blockquote>
+<p>Two algorithms explored in the text are policy iteration and value iteration. Both algorithms are used to discover optimal policies in environments where the dynamics are completely known.</p>
+<section id="policy-evaluation" class="level2">
+<h2 class="anchored" data-anchor-id="policy-evaluation">Policy Evaluation</h2>
+<p>Policy evaluation enables us to compute the value function <span class="math inline">\(v_\pi(s)\)</span> for an arbitrary policy <span class="math inline">\(\pi\)</span>. In iterative policy evaluation, we take <a href="#eq-bellman-value" class="quarto-xref">Equation&nbsp;3</a> and turn it into an update rule to iteratively approximate <span class="math inline">\(v_\pi(s)\)</span>:</p>
+<p><span id="eq-policy-evaluation"><span class="math display">\[
+v_{k+1}(s)
+=
+\sum_{a}\pi(a|s)
+\sum_{s',r}p(s',r|s, a)\lbrack r + \gamma v_k(s') \rbrack
+\tag{7}\]</span></span></p>
+<p>At each iteration, the value <span class="math inline">\(v_{k+1}(s)\)</span> is assigned to the expectation of the immediate reward conditioned on the policy, and utilizing the previous approximation of the value function <span class="math inline">\(v_k(s)\)</span> at each successor state <span class="math inline">\(s'\)</span>. After enough iterations, this process converges.</p>
+<p>This is called an <strong>expected update</strong> because it averages out all possible actions rather than relying on a single action from sample data. This is in contrast to other methods further in the text such as Monte Carlo.</p>
+<p>The algorithm presented for iterative policy evaluation is as follows (implemented in Python):</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> policy_evaluation(V, pi, theta: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.1</span>):</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>        delta <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> s <span class="kw">in</span> iter_states():</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            v <span class="op">=</span> V[s]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            V[s] <span class="op">=</span> expected_return(s, a)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            delta <span class="op">=</span> <span class="bu">max</span>(delta, <span class="bu">abs</span>(v <span class="op">-</span> V[s]))</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> delta <span class="op">&lt;</span> theta:</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>where <code>iter_states()</code> is a helper function to iterate over all possible states, and <code>expected_return(s: State, a: Action)</code> implements <a href="#eq-bellman-value" class="quarto-xref">Equation&nbsp;3</a> to return the value of state <code>s</code> and action <code>a</code>.</p>
+<p>Once we have converged to a final value function for the given policy, we may find that the policy is not optimal (in other words, there exists a state such that the policy action does not have the highest expected return). In this case, we may wish to improve our policy such that it is more optimal.</p>
+</section>
+<section id="policy-improvement" class="level2">
+<h2 class="anchored" data-anchor-id="policy-improvement">Policy Improvement</h2>
+<p>Policy improvement is the reverse of policy iteration. We start with a value function <span class="math inline">\(v_\pi(s)\)</span>, and we want to improve our policy such that it is optimal with respect to the given value function. One such way is to just pick a greedy policy that maximizes the expected action-value, given to us by <span class="math inline">\(v_\pi(s)\)</span>. The following equation gives us the optimal policy that is greedy with respect to the current value function:</p>
+<p><span class="math display">\[
+\pi'(s)=\underset{a}{\text{argmax}} \sum_{s',r} p(s',r|s,a)[r+\gamma v_\pi(s')]
+\]</span></p>
+<p>This is the version if we used <span class="math inline">\(q_\pi(s,a)\)</span>:</p>
+<p><span class="math display">\[
+\pi'(s)=\underset{a}{\text{argmax}}\; q_\pi(s,a)
+\]</span></p>
+<p>And here it is implemented in Python code:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> policy_improvement(V, pi):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    policy_stable <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> s <span class="kw">in</span> iter_states():</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        <span class="co"># store old (action,value) pair</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        old_a <span class="op">=</span> pi[s]</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        old_v <span class="op">=</span> expected_return(s, pi[s])</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="co"># create accumulator to find max (action,value) pair</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        best_a, best_v <span class="op">=</span> pi[s], old_v</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> a <span class="kw">in</span> iter_actions(a):</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> a <span class="op">==</span> old_a:</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>                <span class="co"># skip checking the old action, it is our baseline</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>            v <span class="op">=</span> expected_return(s, a)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> v <span class="op">&gt;</span> best_v:</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>                best_a, best_v <span class="op">=</span> a, v</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        pi[s] <span class="op">=</span> best_a</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> pi[s] <span class="op">!=</span> old_a:</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>            policy_stable <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> policy_stable</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="policy-iteration" class="level2">
+<h2 class="anchored" data-anchor-id="policy-iteration">Policy Iteration</h2>
+<p>Policy iteration is the process of iteratively cycling back between policy evaluation and policy improvement until we converge to an optimal policy. In finite MDPs this procedure is guaranteed to converge, as each step of policy evaluation and improvement produces a policy more optimal than the last. We stop policy iteration when policy improvement does not change the policy, i.e.&nbsp;it is already greedy w.r.t. the value function.</p>
+</section>
+<section id="value-iteration" class="level2">
+<h2 class="anchored" data-anchor-id="value-iteration">Value Iteration</h2>
+<p>Value iteration is similar to policy iteration, except it omits entirely the process of policy improvement. We adjust our policy evaluation method slightly such that we do not rely on any policy <span class="math inline">\(\pi\)</span>. During each iteration over the states, we compute the value function update for each possible action <span class="math inline">\(a\)</span> rather than just one action selected from our policy, and we pick the highest value. This essentially combines policy evaluation and improvement into one sweep since we are updating our value function in a greedy fashion (selecting action with maximum expected return).</p>
+</section>
+</section>
+<section id="jacks-car-rental" class="level1">
+<h1>Jack’s Car Rental</h1>
+<p>Now we’re armed with all of the knowledge we’ll need to solve one of the example problems in the text: Jack’s Car Rental. The original problem statement can be seen in Chapter 4 on page 81 of the text:</p>
+<blockquote class="blockquote">
+<p><strong>Example 4.2:</strong> Jack manages two locations for a nationwide car rental company. Each day, some number of customers arrive at each location to rent cars. If Jack has a car available, he rents it out and is credited $10 by the national company. If he is out of cars at that location, then the business is lost. Cars become available for renting the day after they are returned. To help ensure that cars are available where they are needed, Jack can move them between the two locations overnight, at a cost of $2 per car moved. We assume that the number of cars requested and returned at each location are Poisson random variables, meaning that the probability that the number is <span class="math inline">\(n\)</span> is <span class="math inline">\(\frac{\lambda^n}{n!}e^{-\lambda}\)</span> where <span class="math inline">\(\lambda\)</span> is the expected number. Suppose <span class="math inline">\(\lambda\)</span> is 3 and 4 for rental requests at the first and second locations and 3 and 2 for returns. To simplify the problem slightly, we assume that there can be no more than 20 cars at each location (any additional cars are returned to the nationwide company, and thus disappear from the problem) and a maximum of five cars can be moved from one location to the other in one night. We take the discount rate to be <span class="math inline">\(\gamma=0.9\)</span> and formulate this as a continuing finite MDP, where the time steps are days, the state is the number of cars at each location at the end of the day, and the actions are the net numbers of cars moved between the two locations overnight.</p>
+</blockquote>
+<section id="poisson-distribution" class="level2">
+<h2 class="anchored" data-anchor-id="poisson-distribution">Poisson Distribution</h2>
+<p>Before we implement the MDP, it will help us to have a class to represent arbitrary Poisson distributions. In particular, we care about the probability mass function (PMF) which tells us the probability of observing a particular outcome of the random event modeled by the distribution.</p>
+<p>The PMF of a Poisson is defined as</p>
+<p><span class="math display">\[
+P(N=n ; \lambda) = \frac{\lambda^n}{n!}e^{-\lambda}
+\]</span></p>
+<div id="719f2b6c" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> poisson_pmf(n: <span class="bu">int</span>, mu: <span class="bu">float</span>):</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""The Poisson probability mass function.</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">        n (int): the outcome of the random event.</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">        mu (float): the expected value of the random event.</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (mu<span class="op">**</span>n) <span class="op">/</span> (math.factorial(n)) <span class="op">*</span> math.e <span class="op">**</span> (<span class="op">-</span>mu)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Poisson:</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, mu: <span class="bu">float</span>, upper_n: <span class="bu">int</span> <span class="op">=</span> <span class="dv">15</span>):</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Initialize a new Poisson distribution.</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">        This class caches values from the PMF for all values</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">        of n in the inclusive range [0, upper_n].</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co">        Args:</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co">            mu (float): the mean parameter.</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co">            upper_n (int): the largest outcome we care about to observe.</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co">        """</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> mu <span class="op">&gt;</span> <span class="dv">0</span>, <span class="st">"mu must be a positive number"</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> upper_n <span class="op">&gt;=</span> <span class="dv">0</span>, <span class="st">"n must be a non-negative integer"</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.mu <span class="op">=</span> mu</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.upper_n <span class="op">=</span> upper_n</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.pmf <span class="op">=</span> np.zeros(upper_n <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> n <span class="kw">in</span> <span class="bu">range</span>(upper_n <span class="op">+</span> <span class="dv">1</span>):</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>            <span class="co"># rely on scipy for PMF implementation</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.pmf[n] <span class="op">=</span> poisson_pmf(n, <span class="va">self</span>.mu)</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        <span class="co"># if we capture PMF for events [0, upper_n], we will approach</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>        <span class="co"># a sum of 1 as we increase upper_n. the excluded tail contains</span></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>        <span class="co"># some mass, so we redistribute it to the included mass</span></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.pmf <span class="op">/=</span> <span class="va">self</span>.pmf.<span class="bu">sum</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Having the PMF values precomputed and stored in NumPy arrays will help us to write more efficient, vectorized code later on when we implement policy iteration.</p>
+</section>
+<section id="mdp-formalization" class="level2">
+<h2 class="anchored" data-anchor-id="mdp-formalization">MDP Formalization</h2>
+<p>Next, we can capture relevant parameters from the problem statement as constants in our code and write some helper functions to interact with the state and action spaces of our MDP.</p>
+<div id="919c4c17" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Sequence</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># max number of cars at either location at once</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>MAX_CARS <span class="op">=</span> <span class="dv">20</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># max number of cars that can be moved during the night</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>MAX_MOVES <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># reward (cost) of moving a single car</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>MOVE_COST <span class="op">=</span> <span class="op">-</span><span class="dv">2</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co"># reward of renting a car</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>RENT_CREDIT <span class="op">=</span> <span class="dv">10</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># MDP discount factor</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>GAMMA <span class="op">=</span> <span class="fl">0.9</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co"># poisson parameters</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>POIS_REQ_MU <span class="op">=</span> (<span class="dv">3</span>, <span class="dv">4</span>)  <span class="co"># expected daily requests at location (1, 2)</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>POIS_RET_MU <span class="op">=</span> (<span class="dv">3</span>, <span class="dv">2</span>)  <span class="co"># expected daily returns at location (1, 2)</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="co"># lets also instantiate distributions for these parameters</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="co"># (take advantage of the class we created earlier)</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>UPPER_N <span class="op">=</span> <span class="dv">15</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>POIS_REQ <span class="op">=</span> <span class="bu">tuple</span>(<span class="bu">map</span>(<span class="kw">lambda</span> mu: Poisson(mu, upper_n<span class="op">=</span>UPPER_N), POIS_REQ_MU))</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>POIS_RET <span class="op">=</span> <span class="bu">tuple</span>(<span class="bu">map</span>(<span class="kw">lambda</span> mu: Poisson(mu, upper_n<span class="op">=</span>UPPER_N), POIS_RET_MU))</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>State <span class="op">=</span> <span class="bu">tuple</span>[<span class="bu">int</span>, <span class="bu">int</span>]</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="co">The MDP state is an (i, j) pair of the number of cars at each location.</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>Action <span class="op">=</span> <span class="bu">int</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="co">The MDP action is an integer indicating the movement of cars.</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="co">A positive value indicates a flow from the first location to the second.</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a><span class="co">A negative value indicates a flow from the second location to the first.</span></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a><span class="co">A value of zero indicates no movement of cars.</span></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> states() <span class="op">-&gt;</span> Sequence[State]:</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Return a collection of all possible states.</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns:</span></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a><span class="co">        Sequence[State]: a list of all possible (i, j) state pairs.</span></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [(i, j) <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, MAX_CARS <span class="op">+</span> <span class="dv">1</span>) <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, MAX_CARS <span class="op">+</span> <span class="dv">1</span>)]</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> actions(state: State) <span class="op">-&gt;</span> Sequence[Action]:</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Return a collection of all possible actions from the given state.</span></span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a><span class="co">        state (State): the starting state.</span></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns:</span></span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a><span class="co">        Sequence[Action]: a list of all possible (and valid) actions.</span></span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>    <span class="co"># the total number of cars moveable from either location is bounded by:</span></span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   - the MAX_MOVES parameter</span></span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   - the number of cars at the source location</span></span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>    <span class="co">#   - the number of spots at the target location</span></span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>    upper_bound <span class="op">=</span> <span class="bu">min</span>(MAX_MOVES, state[<span class="dv">0</span>], (MAX_CARS <span class="op">-</span> state[<span class="dv">1</span>]))</span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>    lower_bound <span class="op">=</span> <span class="bu">min</span>(MAX_MOVES, state[<span class="dv">1</span>], (MAX_CARS <span class="op">-</span> state[<span class="dv">0</span>]))</span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">range</span>(<span class="op">-</span>lower_bound, upper_bound <span class="op">+</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="dynamics" class="level2">
+<h2 class="anchored" data-anchor-id="dynamics">Dynamics</h2>
+<p>The next step is to model the dynamics of the world. From reading the original problem statement above, we know that the environment functions in the following way:</p>
+<ol type="1">
+<li><p>At the end of day <span class="math inline">\(t-1\)</span>, Jack selects an action <span class="math inline">\(a \in [-5, 5]\)</span>, equivalent to the number of cars moving between the first and second locations before day <span class="math inline">\(t\)</span>.</p></li>
+<li><p>Jack is issued a negative reward of <span class="math inline">\(-2\cdot|a|\)</span> for moving the cars</p></li>
+<li><p>We sample four independent random variables from four Poisson distributions defined by the scale parameters <span class="math inline">\(\lambda\)</span> of the problem statement (<span class="math inline">\(3\)</span> and <span class="math inline">\(4\)</span> for requests, and <span class="math inline">\(3\)</span> and <span class="math inline">\(2\)</span> for returns at each location respectively).</p></li>
+<li><p>Jack is issued a positive reward of <span class="math inline">\(10\cdot\min(\text{\# cars}, \text{\# requests})\)</span></p></li>
+<li><p>We subtract the number of requests from the count of cars at each location, and add the number of returns, maxing sure that no count goes above 20 (in this case, cars return to the nationwide company lot).</p></li>
+<li><p>Wait for Jack’s next action.</p></li>
+</ol>
+<p>When implementing the dynamics in Python, we can take advantage of the fact that the joint probability of our four random variables will never change, so we can compute it once.</p>
+<div id="c315c9e6" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># generate all possible observations of four random variables.</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>observations <span class="op">=</span> np.array(</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        (requests_1, requests_2, returns_1, returns_2)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> requests_1 <span class="kw">in</span> <span class="bu">range</span>(UPPER_N <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> requests_2 <span class="kw">in</span> <span class="bu">range</span>(UPPER_N <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> returns_1 <span class="kw">in</span> <span class="bu">range</span>(UPPER_N <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> returns_2 <span class="kw">in</span> <span class="bu">range</span>(UPPER_N <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>).T</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co"># get the probability of each joint observation occuring:</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="co"># - product of four independent probabilities</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>joint_probability <span class="op">=</span> np.array(</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        POIS_REQ[<span class="dv">0</span>].pmf.take(observations[<span class="dv">0</span>]),</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        POIS_REQ[<span class="dv">1</span>].pmf.take(observations[<span class="dv">1</span>]),</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        POIS_RET[<span class="dv">0</span>].pmf.take(observations[<span class="dv">2</span>]),</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        POIS_RET[<span class="dv">1</span>].pmf.take(observations[<span class="dv">3</span>]),</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>).prod(axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Shape of observations:"</span>, observations.shape)</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Shape of joint_probability:"</span>, joint_probability.shape)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Shape of observations: (4, 65536)
+Shape of joint_probability: (65536,)</code></pre>
+</div>
+</div>
+</section>
+<section id="policy-iteration-1" class="level2">
+<h2 class="anchored" data-anchor-id="policy-iteration-1">Policy Iteration</h2>
+<p>Here I define a class to hold the individual components of policy iteration, and cycle between them.</p>
+<div id="7a2d0da6" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> PolicyIteration:</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.pi <span class="op">=</span> np.zeros((MAX_CARS <span class="op">+</span> <span class="dv">1</span>, MAX_CARS <span class="op">+</span> <span class="dv">1</span>), dtype<span class="op">=</span><span class="bu">int</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.V <span class="op">=</span> np.zeros((MAX_CARS <span class="op">+</span> <span class="dv">1</span>, MAX_CARS <span class="op">+</span> <span class="dv">1</span>), dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> expected_return(<span class="va">self</span>, state: State, action: Action):</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="co"># assign cost for moving cars, this is deterministic</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        move_reward <span class="op">=</span> MOVE_COST <span class="op">*</span> <span class="bu">abs</span>(action)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="co"># get the state of cars after the nightly moves</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        state_night <span class="op">=</span> (state[<span class="dv">0</span>] <span class="op">-</span> action, state[<span class="dv">1</span>] <span class="op">+</span> action)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># get the number of orders that are fulfilled</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        <span class="co">#  - observations[0] = requests at location 1</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        <span class="co">#  - observations[1] = requests at location 2</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        <span class="co"># we are summing over all possible next states (s',r|s,a)</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        <span class="co"># so we use prior NumPy arrays to help speed up computation</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        fulfilled <span class="op">=</span> (</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>            np.minimum(state_night[<span class="dv">0</span>], observations[<span class="dv">0</span>]),</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>            np.minimum(state_night[<span class="dv">1</span>], observations[<span class="dv">1</span>]),</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>        <span class="co"># get the next state after all fulfilled rental requests are</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>        <span class="co"># removed, and returned cars are added back</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>        <span class="co">#  - observations[2] = returns at location 1</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>        <span class="co">#  - observations[3] = returns at location 2</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>        state_next <span class="op">=</span> (</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>            np.minimum(state_night[<span class="dv">0</span>] <span class="op">-</span> fulfilled[<span class="dv">0</span>] <span class="op">+</span> observations[<span class="dv">2</span>], MAX_CARS),</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>            np.minimum(state_night[<span class="dv">1</span>] <span class="op">-</span> fulfilled[<span class="dv">1</span>] <span class="op">+</span> observations[<span class="dv">3</span>], MAX_CARS),</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>        <span class="co"># get reward for each fulfilled rental request</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>        rent_reward <span class="op">=</span> RENT_CREDIT <span class="op">*</span> (fulfilled[<span class="dv">0</span>] <span class="op">+</span> fulfilled[<span class="dv">1</span>])</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>        <span class="co"># dot product will compute weighed sum of possible stochastic returns</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>        <span class="co"># - weighing is joint probability from prior calculation</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>        expected <span class="op">=</span> move_reward <span class="op">+</span> joint_probability <span class="op">@</span> (</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>            rent_reward <span class="op">+</span> GAMMA <span class="op">*</span> V[state_next]</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> expected</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> policy_evaluation(<span class="va">self</span>, theta: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.1</span>):</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Run policy evaluation."""</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>            delta <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> state <span class="kw">in</span> states():</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>                v <span class="op">=</span> <span class="va">self</span>.V[state]</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>                <span class="co"># note: asynchronous update</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.V[state] <span class="op">=</span> <span class="va">self</span>.expected_return(state, <span class="va">self</span>.pi[state])</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>                delta <span class="op">=</span> <span class="bu">max</span>(delta, <span class="bu">abs</span>(v <span class="op">-</span> <span class="va">self</span>.V[state]))</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> delta <span class="op">&lt;</span> theta:</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span></span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> policy_improvement(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Run policy improvement."""</span></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>        policy_stable <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> state <span class="kw">in</span> states():</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>            best_action, best_v <span class="op">=</span> <span class="va">self</span>.pi[state], <span class="va">self</span>.V[state]</span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> action <span class="kw">in</span> actions(state):</span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> action <span class="op">==</span> <span class="va">self</span>.pi[state]:</span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">continue</span></span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>                v <span class="op">=</span> <span class="va">self</span>.expected_return(state, action)</span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> v <span class="op">&gt;</span> best_v:</span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>                    best_action, best_v <span class="op">=</span> action, v</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> best_action <span class="op">!=</span> <span class="va">self</span>.pi[state]:</span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>                policy_stable <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.pi[state] <span class="op">=</span> best_action</span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> policy_stable</span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> solve(<span class="va">self</span>, max_iter: <span class="bu">int</span> <span class="op">=</span> <span class="dv">5</span>):</span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Run policy iteration."""</span></span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span> <span class="va">self</span>.pi, <span class="va">self</span>.V</span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, max_iter <span class="op">+</span> <span class="dv">1</span>):</span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.policy_evaluation()</span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>            policy_stable <span class="op">=</span> <span class="va">self</span>.policy_improvement()</span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>            <span class="cf">yield</span> <span class="va">self</span>.pi, <span class="va">self</span>.V</span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> policy_stable:</span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="results" class="level2">
+<h2 class="anchored" data-anchor-id="results">Results</h2>
+<div id="a8d06754" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>policy_iteration <span class="op">=</span> PolicyIteration()</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, (pi, V) <span class="kw">in</span> <span class="bu">enumerate</span>(policy_iteration.solve()):</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    fig, axes <span class="op">=</span> plt.subplots(ncols<span class="op">=</span><span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">4</span>))</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Plot value function V</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    im0 <span class="op">=</span> axes[<span class="dv">0</span>].imshow(V, cmap<span class="op">=</span><span class="st">"viridis"</span>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">0</span>].invert_yaxis()</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">0</span>].set_title(<span class="vs">rf"</span><span class="dv">$</span><span class="vs">V_</span><span class="ch">{{</span><span class="sc">{</span>i<span class="sc">}</span><span class="ch">}}</span><span class="dv">$</span><span class="vs">"</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">0</span>].set_xlabel(<span class="st">"Number of cars at location 1"</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">0</span>].set_ylabel(<span class="st">"Number of cars at location 2"</span>, rotation<span class="op">=</span><span class="dv">90</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    nx, ny <span class="op">=</span> V.shape[<span class="dv">1</span>], V.shape[<span class="dv">0</span>]</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">0</span>].set_xticks(np.arange(<span class="dv">0</span>, nx, <span class="dv">5</span>))</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">0</span>].set_yticks(np.arange(<span class="dv">0</span>, ny, <span class="dv">5</span>))</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    fig.colorbar(im0, ax<span class="op">=</span>axes[<span class="dv">0</span>], orientation<span class="op">=</span><span class="st">"vertical"</span>, fraction<span class="op">=</span><span class="fl">0.046</span>, pad<span class="op">=</span><span class="fl">0.04</span>)</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Plot policy pi</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    im1 <span class="op">=</span> axes[<span class="dv">1</span>].imshow(pi, cmap<span class="op">=</span><span class="st">"viridis"</span>)</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">1</span>].invert_yaxis()</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">1</span>].set_title(<span class="vs">rf"</span><span class="dv">$</span><span class="er">\</span><span class="vs">pi_</span><span class="ch">{{</span><span class="sc">{</span>i<span class="sc">}</span><span class="ch">}}</span><span class="dv">$</span><span class="vs">"</span>)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">1</span>].set_xlabel(<span class="st">"Number of cars at location 1"</span>)</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">1</span>].set_ylabel(<span class="st">"Number of cars at location 2"</span>, rotation<span class="op">=</span><span class="dv">90</span>)</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>    nx2, ny2 <span class="op">=</span> pi.shape[<span class="dv">1</span>], pi.shape[<span class="dv">0</span>]</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">1</span>].set_xticks(np.arange(<span class="dv">0</span>, nx2, <span class="dv">5</span>))</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">1</span>].set_yticks(np.arange(<span class="dv">0</span>, ny2, <span class="dv">5</span>))</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>    fig.colorbar(im1, ax<span class="op">=</span>axes[<span class="dv">1</span>], orientation<span class="op">=</span><span class="st">"vertical"</span>, fraction<span class="op">=</span><span class="fl">0.046</span>, pad<span class="op">=</span><span class="fl">0.04</span>)</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>    plt.tight_layout()</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>    plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="writeup_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="writeup_files/figure-html/cell-6-output-2.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="writeup_files/figure-html/cell-6-output-3.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="writeup_files/figure-html/cell-6-output-4.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="writeup_files/figure-html/cell-6-output-5.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="writeup_files/figure-html/cell-6-output-6.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>It looks like we successfully matched the plots from the text!</p>
+</section>
+</section>
+<section id="references" class="level1 unnumbered">
+
+
+</section>
+
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-ha2018worldmodels" class="csl-entry" role="listitem">
+Ha, D., and J. Schmidhuber. 2018. <span>“World Models.”</span> <a href="https://doi.org/10.5281/zenodo.1207631">https://doi.org/10.5281/zenodo.1207631</a>.
+</div>
+<div id="ref-hafner2024masteringdiversedomainsworld" class="csl-entry" role="listitem">
+Hafner, Danijar, Jurgis Pasukonis, Jimmy Ba, and Timothy Lillicrap. 2024. <span>“Mastering Diverse Domains Through World Models.”</span> <a href="https://arxiv.org/abs/2301.04104">https://arxiv.org/abs/2301.04104</a>.
+</div>
+<div id="ref-sutton+barto" class="csl-entry" role="listitem">
+Sutton, Richard S., and Andrew G. Barto. 2018. <em>Reinforcement Learning: An Introduction</em>. Second. The MIT Press. <a href="http://incompleteideas.net/book/the-book-2nd.html">http://incompleteideas.net/book/the-book-2nd.html</a>.
+</div>
+</div></section><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>When working with incomplete/partial state knowledge, we refer to Partially observable Markov decision processes (or POMDPs for short).<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>We denote the action as <span class="math inline">\(\cal{A}(s)\)</span> as opposed to <span class="math inline">\(\cal{A}\)</span> to indicate that the set of actions is dependent upon the current state. For example, we will consider a maze. The state is your position in the maze, and the action is whether you move north, south, east, or west. If you reach a dead end in a maze, that direction will not be available to you, so the set of actions available to you depends on where you are in the maze. When the same set of actions is available at every state, we can use the latter representation as shorthand.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
