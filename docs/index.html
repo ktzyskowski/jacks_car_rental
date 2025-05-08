@@ -80,17 +80,49 @@ div.csl-indent {
 }</style>
 
 
-<script src="writeup_files/libs/clipboard/clipboard.min.js"></script>
-<script src="writeup_files/libs/quarto-html/quarto.js" type="module"></script>
-<script src="writeup_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="writeup_files/libs/quarto-html/popper.min.js"></script>
-<script src="writeup_files/libs/quarto-html/tippy.umd.min.js"></script>
-<script src="writeup_files/libs/quarto-html/anchor.min.js"></script>
-<link href="writeup_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="writeup_files/libs/quarto-html/quarto-syntax-highlighting-0815c480559380816a4d1ea211a47e91.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="writeup_files/libs/bootstrap/bootstrap.min.js"></script>
-<link href="writeup_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="writeup_files/libs/bootstrap/bootstrap-81267100e462c21b3d6c0d5bf76a3417.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-0815c480559380816a4d1ea211a47e91.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-a14e3238c51140e99ccc48519b6ed9ce.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -126,38 +158,14 @@ window.Quarto = {
 
 <body class="quarto-light">
 
-<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-  <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">Table of contents</h2>
-   
-  <ul>
-  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
-  <li><a href="#finite-markov-decision-processes" id="toc-finite-markov-decision-processes" class="nav-link" data-scroll-target="#finite-markov-decision-processes">Finite Markov Decision Processes</a>
-  <ul class="collapse">
-  <li><a href="#policies-and-value-functions" id="toc-policies-and-value-functions" class="nav-link" data-scroll-target="#policies-and-value-functions">Policies and Value Functions</a></li>
-  <li><a href="#bellman-equations" id="toc-bellman-equations" class="nav-link" data-scroll-target="#bellman-equations">Bellman Equations</a></li>
-  <li><a href="#optimal-policies-and-value-functions" id="toc-optimal-policies-and-value-functions" class="nav-link" data-scroll-target="#optimal-policies-and-value-functions">Optimal Policies and Value Functions</a></li>
-  </ul></li>
-  <li><a href="#dynamic-programming" id="toc-dynamic-programming" class="nav-link" data-scroll-target="#dynamic-programming">Dynamic Programming</a>
-  <ul class="collapse">
-  <li><a href="#policy-evaluation" id="toc-policy-evaluation" class="nav-link" data-scroll-target="#policy-evaluation">Policy Evaluation</a></li>
-  <li><a href="#policy-improvement" id="toc-policy-improvement" class="nav-link" data-scroll-target="#policy-improvement">Policy Improvement</a></li>
-  <li><a href="#policy-iteration" id="toc-policy-iteration" class="nav-link" data-scroll-target="#policy-iteration">Policy Iteration</a></li>
-  <li><a href="#value-iteration" id="toc-value-iteration" class="nav-link" data-scroll-target="#value-iteration">Value Iteration</a></li>
-  </ul></li>
-  <li><a href="#jacks-car-rental" id="toc-jacks-car-rental" class="nav-link" data-scroll-target="#jacks-car-rental">Jack’s Car Rental</a>
-  <ul class="collapse">
-  <li><a href="#poisson-distribution" id="toc-poisson-distribution" class="nav-link" data-scroll-target="#poisson-distribution">Poisson Distribution</a></li>
-  <li><a href="#mdp-formalization" id="toc-mdp-formalization" class="nav-link" data-scroll-target="#mdp-formalization">MDP Formalization</a></li>
-  <li><a href="#dynamics" id="toc-dynamics" class="nav-link" data-scroll-target="#dynamics">Dynamics</a></li>
-  <li><a href="#policy-iteration-1" id="toc-policy-iteration-1" class="nav-link" data-scroll-target="#policy-iteration-1">Policy Iteration</a></li>
-  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a></li>
-  </ul></li>
-  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
-  </ul>
-</nav>
-</div>
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -191,8 +199,8 @@ window.Quarto = {
 
 </header>
 
-<nav id="TOC-body" role="doc-toc">
-    <h2 id="toc-title">Table of contents</h2>
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">On this page</h2>
    
   <ul>
   <li><a href="#introduction" id="toc-introduction">Introduction</a></li>
@@ -385,7 +393,7 @@ v_{k+1}(s)
 <p><span class="math display">\[
 P(N=n ; \lambda) = \frac{\lambda^n}{n!}e^{-\lambda}
 \]</span></p>
-<div id="401ad2ba" class="cell" data-execution_count="1">
+<div id="95549892" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -431,7 +439,7 @@ P(N=n ; \lambda) = \frac{\lambda^n}{n!}e^{-\lambda}
 <section id="mdp-formalization" class="level2">
 <h2 class="anchored" data-anchor-id="mdp-formalization">MDP Formalization</h2>
 <p>Next, we can capture relevant parameters from the problem statement as constants in our code and write some helper functions to interact with the state and action spaces of our MDP.</p>
-<div id="24824f76" class="cell" data-execution_count="2">
+<div id="caaba954" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Sequence</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -514,7 +522,7 @@ P(N=n ; \lambda) = \frac{\lambda^n}{n!}e^{-\lambda}
 <li><p>Wait for Jack’s next action.</p></li>
 </ol>
 <p>When implementing the dynamics in Python, we can take advantage of the fact that the joint probability of our four random variables will never change, so we can compute it once.</p>
-<div id="c8919ba7" class="cell" data-execution_count="3">
+<div id="69784825" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># generate all possible observations of four random variables.</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>observations <span class="op">=</span> np.array(</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    [</span>
@@ -548,7 +556,7 @@ Shape of joint_probability: (65536,)</code></pre>
 <section id="policy-iteration-1" class="level2">
 <h2 class="anchored" data-anchor-id="policy-iteration-1">Policy Iteration</h2>
 <p>Here I define a class to hold the individual components of policy iteration, and cycle between them.</p>
-<div id="86d875b5" class="cell" data-execution_count="4">
+<div id="ccecb59c" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> PolicyIteration:</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.pi <span class="op">=</span> np.zeros((MAX_CARS <span class="op">+</span> <span class="dv">1</span>, MAX_CARS <span class="op">+</span> <span class="dv">1</span>), dtype<span class="op">=</span><span class="bu">int</span>)</span>
@@ -632,7 +640,7 @@ Shape of joint_probability: (65536,)</code></pre>
 </section>
 <section id="results" class="level2">
 <h2 class="anchored" data-anchor-id="results">Results</h2>
-<div id="3ca8475d" class="cell" data-execution_count="5">
+<div id="7c91b5a1" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -668,42 +676,42 @@ Shape of joint_probability: (65536,)</code></pre>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="writeup_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
+<p><img src="index_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="writeup_files/figure-html/cell-6-output-2.png" class="img-fluid figure-img"></p>
+<p><img src="index_files/figure-html/cell-6-output-2.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="writeup_files/figure-html/cell-6-output-3.png" class="img-fluid figure-img"></p>
+<p><img src="index_files/figure-html/cell-6-output-3.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="writeup_files/figure-html/cell-6-output-4.png" class="img-fluid figure-img"></p>
+<p><img src="index_files/figure-html/cell-6-output-4.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="writeup_files/figure-html/cell-6-output-5.png" class="img-fluid figure-img"></p>
+<p><img src="index_files/figure-html/cell-6-output-5.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="writeup_files/figure-html/cell-6-output-6.png" class="img-fluid figure-img"></p>
+<p><img src="index_files/figure-html/cell-6-output-6.png" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
@@ -711,7 +719,9 @@ Shape of joint_probability: (65536,)</code></pre>
 <p>It looks like we successfully matched the plots from the text!</p>
 </section>
 </section>
-<section id="references" class="level1 unnumbered">
+<section id="references" class="level1">
+
+
 
 
 </section>
@@ -733,8 +743,7 @@ Sutton, Richard S., and Andrew G. Barto. 2018. <em>Reinforcement Learning: An In
 <li id="fn1"><p>When working with incomplete/partial state knowledge, we refer to Partially observable Markov decision processes (or POMDPs for short).<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p>We denote the action as <span class="math inline">\(\cal{A}(s)\)</span> as opposed to <span class="math inline">\(\cal{A}\)</span> to indicate that the set of actions is dependent upon the current state. For example, we will consider a maze. The state is your position in the maze, and the action is whether you move north, south, east, or west. If you reach a dead end in a maze, that direction will not be available to you, so the set of actions available to you depends on where you are in the maze. When the same set of actions is available at every state, we can use the latter representation as shorthand.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
-</section></div></main>
-<!-- /main column -->
+</section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";

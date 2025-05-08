@@ -2,9 +2,9 @@
 title: Finite MDPs and Dynamic Programming (RL Part 1)
 subtitle: "Notes from Chapters 3 and 4 of _Reinforcement Learning: An Introduction_ and Solutions to Jack's Car Rental Problem"
 author: Kevin Zyskowski
-date: _/_/2025
+date: 5/7/2025
 toc: true
-toc-location: right-body
+toc-location: body
 jupyter: python3
 bibliography: references.bib
 ---
